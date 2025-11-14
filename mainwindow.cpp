@@ -31,25 +31,26 @@ MainWindow::MainWindow(QWidget* parent)
     ui->cbMsbFirst->setChecked(true);
     ui->slCell->setValue(18);
 
-    //ui->saGrid->setWidgetResizable(false);          // поверхность фиксированная
-    //ui->pixelGrid->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    //// Важно: сообщить реальный минимум, чтобы включились скроллы
-    //ui->pixelGrid->setMinimumSize(ui->pixelGrid->sizeHint());
+    // --- Делаем pixelGrid прямым widget() у saGrid ---
     ui->saGrid->setWidgetResizable(false);
     if (ui->saGrid->widget() != ui->pixelGrid) {
-        ui->saGrid->takeWidget();            // убрать auto-contents
-        ui->pixelGrid->setParent(nullptr);   // отцепить от старого родителя
+        QWidget* old = ui->saGrid->takeWidget(); // убрать auto-contents от Designer
+        // вытащим сам pixelGrid из старого контейнера
+        ui->pixelGrid->setParent(nullptr);
         ui->saGrid->setWidget(ui->pixelGrid);
+        if (old && old != ui->pixelGrid) old->deleteLater(); // аккуратно убрать лишнее
     }
     ui->pixelGrid->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     ui->pixelGrid->setMinimumSize(ui->pixelGrid->sizeHint());
+    // --- конец блока скролла ---
+
     // первичная настройка сетки
     ui->pixelGrid->setGridSize(ui->sbRows->value(), ui->sbBytesPerRow->value());
     ui->pixelGrid->setMsbFirst(ui->cbMsbFirst->isChecked());
     ui->pixelGrid->setCellSize(ui->slCell->value());
     resizeGridWidgetToHint();
 
-    // связи
+    // связи: редактор глифа
     connect(ui->btnApply,   &QPushButton::clicked, this, &MainWindow::applyGridFromControls);
     connect(ui->btnClear,   &QPushButton::clicked, ui->pixelGrid, &PixelGridWidget::clear);
     connect(ui->btnInvert,  &QPushButton::clicked, ui->pixelGrid, &PixelGridWidget::invert);
@@ -87,9 +88,16 @@ MainWindow::MainWindow(QWidget* parent)
     if (ui->btnExportBmp)
         connect(ui->btnExportBmp, &QPushButton::clicked, this, &MainWindow::exportBmp);
 
+    // конвертор текста (вкладка)
+    if (ui->plainTextEdit)
+        connect(ui->plainTextEdit,   &QPlainTextEdit::textChanged, this, &MainWindow::onTextToHexChanged);
+    if (ui->plainTextEdit_2)
+        connect(ui->plainTextEdit_2, &QPlainTextEdit::textChanged, this, &MainWindow::onHexToTextChanged);
+
     connect(ui->pixelGrid, &PixelGridWidget::changed, this, &MainWindow::updateStatus);
     updateStatus();
 }
+
 
 MainWindow::~MainWindow() {
     delete ui;
@@ -97,10 +105,11 @@ MainWindow::~MainWindow() {
 
 void MainWindow::resizeGridWidgetToHint() {
     const QSize s = ui->pixelGrid->sizeHint();
-    ui->pixelGrid->setMinimumSize(s); // чтобы ScrollArea понимала "естественный" размер
-    ui->pixelGrid->resize(s);         // фактически увеличим содержимое до нужного
+    ui->pixelGrid->setMinimumSize(s);
+    ui->pixelGrid->resize(s);
     ui->pixelGrid->updateGeometry();
 }
+
 
 
 void MainWindow::applyGridFromControls() {
@@ -232,4 +241,54 @@ void MainWindow::exportBmp() {
         return;
     }
     statusBar()->showMessage(QString("Сохранено: %1").arg(fn), 1500);
+}
+
+QString MainWindow::bytesToEscapedHex(const QByteArray& bytes) const {
+    QString out;
+    out.reserve(bytes.size() * 4);
+    for (unsigned char b : bytes)
+        out += QString("\\x%1").arg(int(b), 2, 16, QLatin1Char('0')).toUpper();
+    return out;
+}
+
+QByteArray MainWindow::parseHexString(const QString& s) const {
+    // поддерживаем \xNN, 0xNN и просто NN (две шестн. цифры),
+    // пробелы/переводы строк/запятые игнорируем
+    QByteArray res;
+    QRegularExpression rx(R"(\\x([0-9A-Fa-f]{2})|0x([0-9A-Fa-f]{2})|([0-9A-Fa-f]{2}))");
+    auto it = rx.globalMatch(s);
+    while (it.hasNext()) {
+        auto m = it.next();
+        QString hh = !m.captured(1).isEmpty() ? m.captured(1)
+                     : !m.captured(2).isEmpty() ? m.captured(2)
+                                                : m.captured(3);
+        bool ok = false;
+        int v = hh.toInt(&ok, 16);
+        if (ok) res.append(char(v));
+    }
+    return res;
+}
+
+void MainWindow::onTextToHexChanged() {
+    if (m_convBusy) return;
+    if (!ui->plainTextEdit || !ui->plainTextEdit_2) return;
+    m_convBusy = true;
+    const QByteArray bytes = ui->plainTextEdit->toPlainText().toLocal8Bit(); // CP1251 на русской Windows
+    const QString hex = bytesToEscapedHex(bytes);
+    ui->plainTextEdit_2->blockSignals(true);
+    ui->plainTextEdit_2->setPlainText(hex);
+    ui->plainTextEdit_2->blockSignals(false);
+    m_convBusy = false;
+}
+
+void MainWindow::onHexToTextChanged() {
+    if (m_convBusy) return;
+    if (!ui->plainTextEdit || !ui->plainTextEdit_2) return;
+    m_convBusy = true;
+    const QByteArray bytes = parseHexString(ui->plainTextEdit_2->toPlainText());
+    const QString txt = QString::fromLocal8Bit(bytes); // обратно из CP1251 (или локальной ANSI) в Unicode
+    ui->plainTextEdit->blockSignals(true);
+    ui->plainTextEdit->setPlainText(txt);
+    ui->plainTextEdit->blockSignals(false);
+    m_convBusy = false;
 }
