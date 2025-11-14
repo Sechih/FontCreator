@@ -1,0 +1,64 @@
+# === Qt / Qt Creator ===
+*.pro.user
+*.pro.user.*
+*.qbs.user
+*.qbs.user.*
+*.qmlproject.user
+*.qmlproject.user.*
+*.creator.*
+*.autosave
+
+# Build и бинарные артефакты
+build-*/
+*.o
+*.obj
+*.lo
+*.la
+*.al
+*.libs
+*.dll
+*.so
+*.so.*
+*.dylib
+*.a
+*.lib
+*.exe
+*.out
+*.app
+
+# Moc, UI, qrc (генерируемые Qt)
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+*.moc
+
+# CMake
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+*.cmake
+*.cbp
+Makefile
+
+# Qt Creator/CLion временные папки
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Логи и временные файлы
+*.log
+*.tmp
+*.bak
+*.old
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
