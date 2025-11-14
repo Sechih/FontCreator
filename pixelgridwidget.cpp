@@ -1,6 +1,7 @@
 #include "pixelgridwidget.h"
 #include <QPainter>
 #include <QMouseEvent>
+#include <QImage>
 #include <algorithm>
 
 PixelGridWidget::PixelGridWidget(QWidget* parent) : QWidget(parent) {
@@ -14,6 +15,7 @@ void PixelGridWidget::setGridSize(int rows, int bytesPerRow) {
     m_bits.resize(m_rows * m_cols);
     m_bits.fill(false);
     updateGeometry();
+    setMinimumSize(sizeHint());
     update();
     emit changed();
 }
@@ -21,6 +23,7 @@ void PixelGridWidget::setGridSize(int rows, int bytesPerRow) {
 void PixelGridWidget::setCellSize(int px) {
     m_cell = std::clamp(px, 6, 64);
     updateGeometry();
+    setMinimumSize(sizeHint());
     update();
 }
 
@@ -29,8 +32,10 @@ void PixelGridWidget::clear() {
     update();
     emit changed();
 }
+
 void PixelGridWidget::invert() {
-    for (int i=0;i<m_bits.size();++i) m_bits.toggleBit(i);
+    for (int i=0;i<m_bits.size();++i)
+        m_bits.setBit(i, !m_bits.testBit(i));
     update();
     emit changed();
 }
@@ -92,6 +97,7 @@ bool PixelGridWidget::importBytes(const QVector<quint8>& bytes, int bpr, bool ms
             }
         }
     }
+    setMinimumSize(sizeHint());
     update(); emit changed();
     return true;
 }
@@ -139,6 +145,44 @@ QString PixelGridWidget::exportCWithAscii() const {
     return out;
 }
 
+QImage PixelGridWidget::toQImage() const {
+    QImage img(m_cols, m_rows, QImage::Format_ARGB32);
+    img.fill(Qt::white);
+    for (int r=0; r<m_rows; ++r)
+        for (int c=0; c<m_cols; ++c)
+            if (pixel(r,c))
+                img.setPixelColor(c, r, Qt::black);
+    return img;
+}
+
+bool PixelGridWidget::importFromImage(const QImage& src, bool autoResize, int threshold, bool invert) {
+    if (src.isNull()) return false;
+
+    QImage g = src.convertToFormat(QImage::Format_Grayscale8);
+    int w = g.width();
+    int h = g.height();
+
+    if (autoResize) {
+        int bpr = (w + 7) / 8;
+        setGridSize(h, bpr);
+    }
+    int useW = std::min(m_cols, w);
+    int useH = std::min(m_rows, h);
+
+    clear();
+
+    for (int y=0; y<useH; ++y) {
+        for (int x=0; x<useW; ++x) {
+            int gray = qGray(g.pixel(x, y));
+            bool on = (gray < threshold);
+            if (invert) on = !on;
+            setPixel(y, x, on);
+        }
+    }
+    update(); emit changed();
+    return true;
+}
+
 QSize PixelGridWidget::sizeHint() const {
     int w = m_cols * (m_cell + m_gap) + m_gap;
     int h = m_rows * (m_cell + m_gap) + m_gap;
@@ -152,7 +196,6 @@ void PixelGridWidget::paintEvent(QPaintEvent*) {
     const int cw = m_cell, ch = m_cell;
     const int gap = m_gap;
 
-    // клетки
     for (int r=0; r<m_rows; ++r) {
         for (int c=0; c<m_cols; ++c) {
             int x = gap + c*(cw+gap);
@@ -179,7 +222,6 @@ void PixelGridWidget::mousePressEvent(QMouseEvent* e) {
     if (!posToCell(e->pos(), r, c)) return;
     if (e->button() == Qt::LeftButton)  m_drawValue = true;
     if (e->button() == Qt::RightButton) m_drawValue = false;
-    // ЛКМ по уже включенной клетке — тоже можно «ластик» правой кнопкой
     setPixel(r, c, m_drawValue);
     m_drag = true;
     update(); emit changed();

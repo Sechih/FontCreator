@@ -2,6 +2,8 @@
 #include <QMainWindow>
 #include <QVector>
 
+class QScrollArea;
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -22,6 +24,11 @@ private slots:
     void exportBytes();
     void exportPy();
     void updateStatus();
+
+    // новое
+    void importBmp();
+    void exportBmp();
+    void resizeGridWidgetToHint();
 
 private:
     Ui::MainWindow* ui;

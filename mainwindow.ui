@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1055</width>
+    <width>1121</width>
     <height>600</height>
    </rect>
   </property>
@@ -89,7 +89,7 @@
        <item row="0" column="2">
         <widget class="QCheckBox" name="cbMsbFirst">
          <property name="text">
-          <string>CheckBox</string>
+          <string>MSB слева</string>
          </property>
         </widget>
        </item>
@@ -113,7 +113,7 @@
       </layout>
      </widget>
     </item>
-    <item row="0" column="1" rowspan="2">
+    <item row="0" column="2" rowspan="2">
      <widget class="QTabWidget" name="tabIO">
       <property name="currentIndex">
        <number>0</number>
@@ -123,7 +123,14 @@
         <string>Импорт</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_2">
-        <item row="0" column="0" colspan="3">
+        <item row="1" column="3">
+         <widget class="QPushButton" name="btnPaste">
+          <property name="text">
+           <string>Вставить из буфера</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0" colspan="4">
          <widget class="QPlainTextEdit" name="teInput"/>
         </item>
         <item row="1" column="0">
@@ -141,9 +148,9 @@
          </widget>
         </item>
         <item row="1" column="2">
-         <widget class="QPushButton" name="btnPaste">
+         <widget class="QPushButton" name="btnImportBmp">
           <property name="text">
-           <string>Вставить из буфера</string>
+           <string>Импорт bmp</string>
           </property>
          </widget>
         </item>
@@ -168,10 +175,17 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="0" colspan="4">
+        <item row="0" column="0" colspan="5">
          <widget class="QPlainTextEdit" name="teOutput"/>
         </item>
         <item row="1" column="3">
+         <widget class="QPushButton" name="btnExportPy">
+          <property name="text">
+           <string>Python list</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="4">
          <widget class="QPushButton" name="btnCopyOut">
           <property name="text">
            <string>Копировать</string>
@@ -179,18 +193,57 @@
          </widget>
         </item>
         <item row="1" column="2">
-         <widget class="QPushButton" name="btnExportPy">
+         <widget class="QPushButton" name="btnExportBmp">
           <property name="text">
-           <string>Python list</string>
+           <string>Экспорт bmp</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_3">
+       <attribute name="title">
+        <string>Конвертор текста</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_5">
+        <item row="0" column="0">
+         <widget class="QPlainTextEdit" name="plainTextEdit"/>
+        </item>
+        <item row="1" column="0">
+         <widget class="QPlainTextEdit" name="plainTextEdit_2"/>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+    <item row="1" column="0" colspan="2">
+     <widget class="QScrollArea" name="saGrid">
+      <property name="widgetResizable">
+       <bool>true</bool>
+      </property>
+      <widget class="QWidget" name="scrollAreaWidgetContents">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>495</width>
+         <height>367</height>
+        </rect>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_6">
+        <item row="0" column="0">
+         <widget class="PixelGridWidget" name="pixelGrid" native="true">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>16777215</height>
+           </size>
           </property>
          </widget>
         </item>
        </layout>
       </widget>
      </widget>
-    </item>
-    <item row="1" column="0">
-     <widget class="PixelGridWidget" name="pixelGrid" native="true"/>
     </item>
    </layout>
   </widget>
@@ -199,7 +252,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1055</width>
+     <width>1121</width>
      <height>25</height>
     </rect>
    </property>
