@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- /** \brief Общая конфигурация инсталлятора */ -->
 <Installer>
-  <Name>CANFusion</Name>
+  <Name>FontCreator</Name>
   <Version>1.0.0</Version>
-  <Title>CANFusion Installer</Title>
+  <Title>FontCreator Installer</Title>
   <Publisher>Ваша компания</Publisher>
   <ProductUrl>https://example.local</ProductUrl>
-  <TargetDir>@ApplicationsDir@/CANFusion</TargetDir>
-  <StartMenuDir>CANFusion</StartMenuDir>
+  <TargetDir>@ApplicationsDir@/FontCreator</TargetDir>
+  <StartMenuDir>FontCreator</StartMenuDir>
   <WizardStyle>Modern</WizardStyle>
   <AllowNonAsciiCharacters>true</AllowNonAsciiCharacters>
   <InstallerApplicationIcon>app.ico</InstallerApplicationIcon>   <!-- по желанию -->
