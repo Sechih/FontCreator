@@ -115,16 +115,22 @@ void MainWindow::resizeGridWidgetToHint() {
 void MainWindow::applyGridFromControls() {
     int bpr  = ui->sbBytesPerRow->value();
     int rows = ui->sbRows->value();
-    ui->pixelGrid->setGridSize(rows, bpr);
+    ui->pixelGrid->resizeGridPreserve(rows, bpr);
     ui->pixelGrid->setMsbFirst(ui->cbMsbFirst->isChecked());
     resizeGridWidgetToHint();
     updateStatus();
 }
 
+/** \brief Парсер байтов из текста с поддержкой "0x"/"0X" и десятичного формата.
+ *  \details Регистронезависимый матчинг префикса 0x/0X. Десятичные числа до 255.
+ */
 QVector<quint8> MainWindow::parseBytes(const QString& text) {
     QString s = text;
     s.replace(QRegularExpression(R"(//[^\n\r]*)"), " "); // убрать // комменты
-    QRegularExpression rx(R"(0x([0-9A-Fa-f]{1,2})|\b(\d{1,3})\b)");
+    QRegularExpression rx(
+        R"(0x([0-9A-Fa-f]{1,2})|\b(\d{1,3})\b)",
+        QRegularExpression::CaseInsensitiveOption  // <<< важно: 0x/0X
+        );
     QVector<quint8> out;
     auto it = rx.globalMatch(s);
     while (it.hasNext()) {
@@ -180,21 +186,28 @@ void MainWindow::exportC() {
     ui->teOutput->setPlainText(ui->pixelGrid->exportCWithAscii());
     statusBar()->showMessage("Экспорт: C + ASCII", 1500);
 }
-
+/** \brief Экспорт только байтов в стиле "0xFE, 0x07, ..." (0x — нижний регистр). */
 void MainWindow::exportBytes() {
     auto bytes = ui->pixelGrid->exportBytes();
     QStringList xs;
     xs.reserve(bytes.size());
-    for (auto b : bytes) xs << QString("0x%1").arg(b,2,16,QLatin1Char('0')).toUpper();
+    for (auto b : bytes) {
+        const QString hex = QString::number(b, 16).rightJustified(2, QLatin1Char('0')).toUpper();
+        xs << QString("0x%1").arg(hex);  // "0x" остаётся нижним, цифры — верхние
+    }
     ui->teOutput->setPlainText(xs.join(", "));
     statusBar()->showMessage("Экспорт: только байты", 1500);
 }
 
+/** \brief Экспорт Python-списка байтов в стиле ["0xFE", ...] с 0x в нижнем регистре. */
 void MainWindow::exportPy() {
     auto bytes = ui->pixelGrid->exportBytes();
     QStringList xs;
     xs.reserve(bytes.size());
-    for (auto b : bytes) xs << QString("0x%1").arg(b,2,16,QLatin1Char('0')).toUpper();
+    for (auto b : bytes) {
+        const QString hex = QString::number(b, 16).rightJustified(2, QLatin1Char('0')).toUpper();
+        xs << QString("0x%1").arg(hex);
+    }
     ui->teOutput->setPlainText("[" + xs.join(", ") + "]");
     statusBar()->showMessage("Экспорт: Python list", 1500);
 }
@@ -243,19 +256,24 @@ void MainWindow::exportBmp() {
     statusBar()->showMessage(QString("Сохранено: %1").arg(fn), 1500);
 }
 
+/** \brief Преобразовать байты в строку вида "\xNN\xAB..." (префикс \x — нижний регистр). */
 QString MainWindow::bytesToEscapedHex(const QByteArray& bytes) const {
     QString out;
     out.reserve(bytes.size() * 4);
-    for (unsigned char b : bytes)
-        out += QString("\\x%1").arg(int(b), 2, 16, QLatin1Char('0')).toUpper();
+    for (unsigned char b : bytes) {
+        const QString hex = QString::number(int(b), 16).rightJustified(2, QLatin1Char('0')).toUpper();
+        out += "\\x" + hex;  // \x остаётся нижним, цифры — верхние
+    }
     return out;
 }
 
+/** \brief Спарсить строку с \xNN / 0xNN / NN (регистронезависимо для \x/0x). */
 QByteArray MainWindow::parseHexString(const QString& s) const {
-    // поддерживаем \xNN, 0xNN и просто NN (две шестн. цифры),
-    // пробелы/переводы строк/запятые игнорируем
     QByteArray res;
-    QRegularExpression rx(R"(\\x([0-9A-Fa-f]{2})|0x([0-9A-Fa-f]{2})|([0-9A-Fa-f]{2}))");
+    QRegularExpression rx(
+        R"(\\x([0-9A-Fa-f]{2})|0x([0-9A-Fa-f]{2})|([0-9A-Fa-f]{2}))",
+        QRegularExpression::CaseInsensitiveOption   // <<< важно: \x/0x и \X/0X
+        );
     auto it = rx.globalMatch(s);
     while (it.hasNext()) {
         auto m = it.next();
